@@ -7,6 +7,7 @@ Github:   https://github.com/xinlin-z/tcping
 Blog:     https://CS4096.com
 License:  MIT
 """
+import sys
 import socket
 from time import sleep
 from time import monotonic as time
@@ -15,15 +16,55 @@ import argparse
 import math
 
 
+def cprint(*objects, sep=' ', end='\n', file=sys.stdout,
+           flush=False, fg=None, bg=None, style='default'):
+    """ colorful print.
+    Color and style the text and background, then call the print function,
+    Eg: cprint('cs4096.com', fg='red', bg='green', style='blink')
+    The other parameters are the same with stand print!
+    """
+    def _ct(code='0'):
+        return '\033[%sm'%code
+
+    # text color
+    c = 37
+    if fg in ('red','r'): c = 31
+    elif fg in ('green','g'): c = 32
+    elif fg in ('yellow','y'): c = 33
+    elif fg in ('blue','b'): c = 34
+    elif fg in ('magenta','m'): c = 35
+    elif fg in ('cyan','c'): c = 36
+    elif fg in ('white','w'): c = 37
+    elif fg in ('black','k'): c = 30
+    # background color
+    b = 40
+    if bg in ('red','r'): b = 41
+    elif bg in ('green','g'): b = 42
+    elif bg in ('yellow','y'): b = 43
+    elif bg in ('blue','b'): b = 44
+    elif bg in ('magenta','m'): b = 45
+    elif bg in ('cyan','c'): b = 46
+    elif bg in ('white','w'): b = 47
+    elif bg in ('black','k'): b = 40
+    # style
+    a = 0
+    if style == 'underline': a = 4
+    elif style == 'blink': a = 5
+    elif style == 'inverse': a = 7
+
+    string = sep.join(map(str, objects))
+    color = '%d;%d;%d' % (a,c,b)
+    print(_ct(color)+string+_ct(), sep=sep, end=end, file=file, flush=flush)
+
+
 def mean(lst):
-    assert len(lst) >= 1
-    return round(sum(lst)/len(lst), 3)
+    return 0 if len(lst)==0 else round(sum(lst)/len(lst), 3)
 
 
 def median(lst):
-    assert len(lst) >= 1
+    if(n:=len(lst)) == 0:
+        return 0
     a = lst[:]
-    n = len(a)
     m = n // 2
     a.sort()
     md = a[m] if n%2 else (a[m-1]+a[m])/2
@@ -31,8 +72,7 @@ def median(lst):
 
 
 def std(lst):
-    assert len(lst) >= 1
-    if (n:=len(lst)) == 1:
+    if(n:=len(lst)) <= 1:
         return 0
     m = mean(lst)
     var = sum((i-m)**2 for i in lst) / (n-1)
@@ -72,6 +112,7 @@ if __name__ == '__main__':
     for ip in ips:
         print('tcping', ip+':'+str(args.port))
         i = 0
+        cts = []
         while True:
             try:
                 s = socket.socket()
@@ -79,9 +120,10 @@ if __name__ == '__main__':
                 tic = time()
                 s.connect((ip,args.port))
                 toc = time()
-                conntime = toc - tic
+                conntime = (toc-tic)*1000
                 s.close()
-                msg = str(round(conntime*1000,3))+'ms'
+                cts.append(conntime)
+                msg = str(round(conntime,3))+'ms'
             except ConnectionRefusedError:
                 msg = 'connection refused'
             except socket.timeout:
@@ -89,10 +131,14 @@ if __name__ == '__main__':
 
             i += 1
             ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-            print(f'[{ts} tcping {ip}:{args.port} {i}/{args.n}]',msg)
+            print(f'\r[{ts} tcping {ip}:{args.port} {i}/{args.n}]',msg)
+            cprint(f'> data:{len(cts)}, std:{std(cts)}, '
+                   f'mean:{mean(cts)}, median:{median(cts)}  ',
+                   end='', flush=True, fg='w', bg='b')
 
             if i != args.n:
                 sleep(args.i)
             else:
+                print()
                 break
 
