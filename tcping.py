@@ -93,10 +93,15 @@ if __name__ == '__main__':
                         help='tcping timeout in second')
     args = parser.parse_args()
 
-    ips = [t[4][0] for t in socket.getaddrinfo(args.host.strip(),
-                                               None,
-                                               socket.AF_INET,
-                                               socket.SOCK_STREAM)]
+    try:
+        ips = [t[4][0] for t in socket.getaddrinfo(args.host.strip(),
+                                                   None,
+                                                   socket.AF_INET,
+                                                   socket.SOCK_STREAM)]
+    except Exception as e:
+        print(repr(e))
+        sys.exit(1)
+
     if args.n < 0:
         args.n = 4
     if args.i < 0:
