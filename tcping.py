@@ -3,8 +3,8 @@
 tcping by connect in Python
 
 Author:   xinlin-z
-Github:   https://github.com/xinlin-z/tcping.py
-Blog:     https://cs.pynote.net
+Github:   https://github.com/xinlin-z/tcping
+Blog:     https://CS4096.com
 License:  MIT
 """
 import socket
@@ -39,14 +39,10 @@ def std(lst):
     return round(math.sqrt(var), 3)
 
 
-def stralign(s):
-    return s.ljust(11, ' ')
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-V', '--version', action='version',
-        version='tcping by xinlin-z (https://github.com/xinlin-z/tcping.py)')
+        version='tcping by xinlin-z (https://github.com/xinlin-z/tcping)')
     parser.add_argument('host', help='ip or FQDN')
     parser.add_argument('port', type=int, help='port number')
     parser.add_argument('-n', type=int, default=4,
@@ -68,49 +64,32 @@ if __name__ == '__main__':
     if args.t < 0:
         args.t = 3.0
 
-    print('# tcping by connect (tcping.py)')
+    print('# tcping by connect')
     print('# ip:', str(ips), ', port:', args.port)
     print('# count:', args.n if args.n else 'infinity')
     print('# interval:', str(args.i)+'s')
     print('# timeout:', str(args.t)+'s')
-    print('# C:Connection time, M:Mean, Md:Median, J:Jitter')
-    print('# Time Unit: millisecond')
-    print('# Mean&Median&Jitter: calc the last(max) **64** valid measures')
     for ip in ips:
         print('tcping', ip+':'+str(args.port))
         i = 0
-        j = 0
-        ct = []
         while True:
             try:
-                success = False
                 s = socket.socket()
                 s.settimeout(args.t)
                 tic = time()
                 s.connect((ip,args.port))
                 toc = time()
+                conntime = toc - tic
                 s.close()
-                success = True
-                j += 1
-                ct.append((toc-tic)*1000)
-                ct = ct[-64:]
-                conntime = str(round(ct[-1],3))+'(C)'
+                msg = str(round(conntime*1000,3))+'ms'
             except ConnectionRefusedError:
                 msg = 'connection refused'
             except socket.timeout:
-                msg = 'timeout(>%sms)' % str(round(args.t*1000))
+                msg = f'timeout(>{args.t*1000}ms)'
 
             i += 1
             ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-            show = f'[{ts} tcping {ip}:{args.port} {j}/{i}]'
-            if success:
-                print(show,
-                      stralign(conntime),
-                      stralign(str(mean(ct))+'(M)'),
-                      stralign(str(median(ct))+'(Md)'),
-                      stralign(str(std(ct))+'(J)'))
-            else:
-                print(show, msg)
+            print(f'[{ts} tcping {ip}:{args.port} {i}/{args.n}]',msg)
 
             if i != args.n:
                 sleep(args.i)
